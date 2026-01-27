@@ -4,7 +4,8 @@
 ![Status do Projeto](https://img.shields.io/badge/status-em%20desenvolvimento-yellow )
 ![Linguagem Principal](https://img.shields.io/github/languages/top/MiranFabio/OptimusCyberSecurity?color=blue )
 ![Licença](https://img.shields.io/github/license/MiranFabio/OptimusCyberSecurity?color=green )
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Fábio%20Miranda-blue?style=flat&logo=linkedin )](https://www.linkedin.com/in/seu-perfil-aqui/ )
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Fábio%20Miranda-blue?style=flat&logo=linkedin )](https://www.linkedin.com/in/fábiooliveiramiranda )
+
 
 ---
 

@@ -1,0 +1,10 @@
+timestamp,username,source_ip,event_type
+2026-01-27T10:00:01Z,fabio.miranda,192.168.1.10,login_success
+2026-01-27T10:01:15Z,ana.silva,192.168.1.12,login_success
+2026-01-27T10:02:30Z,злоумышленник,185.220.101.34,login_failed
+2026-01-27T10:02:35Z,злоумышленник,185.220.101.34,login_failed
+2026-01-27T10:02:41Z,злоумышленник,185.220.101.34,login_failed
+2026-01-27T10:02:49Z,pedro.santos,192.168.1.15,login_failed
+2026-01-27T10:02:55Z,злоумышленник,185.220.101.34,login_failed
+2026-01-27T10:03:01Z,злоумышленник,185.220.101.34,login_failed
+2026-01-27T10:03:10Z,ana.silva,192.168.1.12,logout_success

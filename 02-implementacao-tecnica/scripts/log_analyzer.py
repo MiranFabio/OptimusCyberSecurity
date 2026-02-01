@@ -1,86 +1,70 @@
 # -*- coding: utf-8 -*-
-# Importa o módulo 'csv' para facilitar a leitura de arquivos CSV e
-# o módulo 'collections' para usar o 'defaultdict', um dicionário especial.
 import csv
 from collections import defaultdict
+from datetime import datetime, time
 
-# --- Momento de Estudo: O que é defaultdict? ---
-# É um dicionário que não levanta um erro (KeyError) se você tentar acessar
-# uma chave que não existe. Em vez disso, ele cria a chave com um valor padrão.
-# No nosso caso, `defaultdict(int)` significa que se um usuário não estiver no
-# nosso dicionário de contagem, ele será criado com o valor padrão de um inteiro, que é 0.
-# Isso simplifica o código, pois não precisamos verificar se a chave já existe.
+# --- Para o Curso: O que é Refatoração (Refactoring)? ---
+# É o processo de reestruturar o código para melhorar seu design, sem alterar
+# seu comportamento externo. Aqui, estamos separando a LÓGICA (encontrar alertas)
+# da APRESENTAÇÃO (imprimir na tela). Isso torna nosso código mais limpo,
+# reutilizável e, o mais importante, TESTÁVEL.
 
-def analyze_logs(log_file_path, failure_threshold=5):
-    """
-    Analisa um arquivo de log de autenticação para detectar possíveis
-    ataques de força bruta.
-
-    Args:
-        log_file_path (str): O caminho para o arquivo de log CSV.
-        failure_threshold (int): O número de falhas de login que aciona um alerta.
-                                 O padrão é 5.
-    """
-    print(f"[*] Iniciando análise do arquivo de log: {log_file_path}")
-
-    # Cria um defaultdict para contar as falhas de login por usuário.
-    # Ex: {'злоумышленник': 5, 'pedro.santos': 1}
+def analyze_brute_force(reader, failure_threshold=5):
+    """Analisa logs para ataques de força bruta e retorna uma lista de alertas."""
     failed_login_counts = defaultdict(int)
+    alerts = []
+    for row in reader:
+        if row['event_type'] == 'login_failed':
+            failed_login_counts[row['username']] += 1
+    
+    for user, count in failed_login_counts.items():
+        if count >= failure_threshold:
+            alerts.append(f"[ALERTA DE FORÇA BRUTA] Usuário: '{user}', Tentativas: {count}")
+    return alerts
 
+def analyze_off_hours_access(reader, start_time=time(22, 0), end_time=time(6, 0)):
+    """Analisa logs para acessos fora do horário comercial e retorna uma lista de alertas."""
+    alerts = []
+    for row in reader:
+        login_time_dt = datetime.fromisoformat(row['timestamp'].replace('Z', ''))
+        login_time = login_time_dt.time()
+        
+        is_off_hours = not (start_time <= end_time and start_time <= login_time <= end_time) or \
+                       (start_time > end_time and (login_time >= start_time or login_time <= end_time))
+
+        if row['event_type'] == 'login_success' and is_off_hours:
+             alerts.append(f"[ALERTA DE HORÁRIO] Usuário: '{row['username']}' logou fora do horário às {login_time}")
+    return alerts
+
+def main(log_file_path):
+    """Função principal que orquestra a análise e imprime os resultados."""
+    print(f"[*] Iniciando análise do arquivo de log: {log_file_path}")
+    
     try:
-        # Abre o arquivo de log para leitura. 'with' garante que o arquivo será fechado
-        # automaticamente no final, mesmo que ocorram erros.
         with open(log_file_path, mode='r', encoding='utf-8') as csvfile:
-            # 'csv.DictReader' lê o arquivo e trata cada linha como um dicionário,
-            # usando o cabeçalho (primeira linha) como as chaves.
-            # Ex: {'timestamp': '...', 'username': '...', 'event_type': '...'}
-            reader = csv.DictReader(csvfile)
+            # Ler todo o conteúdo para poder passar o leitor para múltiplas funções
+            logs = list(csv.DictReader(csvfile))
+        
+        # Executa as análises
+        brute_force_alerts = analyze_brute_force(logs)
+        off_hours_alerts = analyze_off_hours_access(logs)
 
-            # Itera sobre cada linha (log) no arquivo.
-            for row in reader:
-                # Verifica se o evento é uma falha de login.
-                if row['event_type'] == 'login_failed':
-                    # Se for, incrementa o contador para aquele usuário.
-                    username = row['username']
-                    failed_login_counts[username] += 1
+        all_alerts = brute_force_alerts + off_hours_alerts
+
+        print("---" * 10)
+        if not all_alerts:
+            print("[OK] Nenhuma anomalia detectada.")
+        else:
+            for alert in all_alerts:
+                print(alert)
+        print("---" * 10)
 
     except FileNotFoundError:
         print(f"[ERRO] O arquivo '{log_file_path}' não foi encontrado.")
-        return # Encerra a função se o arquivo não existir.
     except Exception as e:
-        print(f"[ERRO] Ocorreu um erro inesperado ao ler o arquivo: {e}")
-        return
-
-    print("[*] Análise de contagem de falhas concluída.")
-    print("---" * 10)
-
-    # --- Geração de Alertas ---
-    print("[!] Verificando se algum limite de falhas foi atingido...")
-    alert_triggered = False
-    # Itera sobre os usuários e suas contagens de falhas.
-    for user, count in failed_login_counts.items():
-        # Se a contagem de falhas para um usuário atingir ou exceder o limite...
-        if count >= failure_threshold:
-            print(f"  [ALERTA] Possível ataque de força bruta detectado!")
-            print(f"  -> Usuário: '{user}'")
-            print(f"  -> Tentativas de login falhas: {count} (Limite é {failure_threshold})")
-            alert_triggered = True
-
-    if not alert_triggered:
-        print("[OK] Nenhum usuário atingiu o limite de falhas de login.")
-
-    print("---" * 10)
+        print(f"[ERRO] Ocorreu um erro inesperado: {e}")
+    
     print("[*] Análise finalizada.")
 
-
-# --- Ponto de Execução do Script ---
-# A construção `if __name__ == "__main__":` é uma boa prática em Python.
-# Ela garante que o código dentro deste bloco só será executado quando você
-# rodar o script diretamente (ex: `python log_analyzer.py`), e não quando
-# ele for importado por outro script.
 if __name__ == "__main__":
-    # Define o nome do arquivo de log que queremos analisar.
-    log_filename = "auth_logs.csv"
-    
-    # Chama a nossa função principal para iniciar a análise.
-    analyze_logs(log_filename)
+    main("auth_logs.csv")

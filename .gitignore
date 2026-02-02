@@ -1,0 +1,5 @@
+# Ignorar caches do Python e do Pytest
+__pycache__/
+02-implementacao-tecnica/scripts/.pytest_cache/
+
+
